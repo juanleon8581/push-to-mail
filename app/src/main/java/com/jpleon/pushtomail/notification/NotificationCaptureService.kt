@@ -2,7 +2,9 @@ package com.jpleon.pushtomail.notification
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import androidx.work.Constraints
 import androidx.work.Data
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.jpleon.pushtomail.PushToMailApp
@@ -27,6 +29,12 @@ class NotificationCaptureService : NotificationListenerService() {
         val title = extras.getCharSequence("android.title")?.toString().orEmpty()
         val text = extras.getCharSequence("android.text")?.toString().orEmpty()
 
+        // Algunas apps postean un placeholder sin contenido antes de la version real
+        // (mismo o distinto evento) -- si no hay titulo ni texto no hay nada que mandar,
+        // se salta. Nada de debounce/cancelacion: eso arriesga perderse una notificacion
+        // real que llegue rapido despues de otra.
+        if (title.isBlank() && text.isBlank()) return
+
         scope.launch {
             val app = applicationContext as PushToMailApp
             val matches = app.serviceLocator.triggerRepository.getEnabledForPackage(packageName)
@@ -44,6 +52,11 @@ class NotificationCaptureService : NotificationListenerService() {
 
         val request = OneTimeWorkRequestBuilder<MailWorker>()
             .setInputData(data)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
             .build()
 
         WorkManager.getInstance(applicationContext).enqueue(request)

@@ -45,6 +45,11 @@ class TriggerRepository(
 
     suspend fun setEnabled(id: Long, enabled: Boolean) = dao.setEnabled(id, enabled)
 
+    suspend fun duplicate(id: Long): Long? {
+        val original = getById(id) ?: return null
+        return save(original.copy(id = 0L, name = "${original.name} (copia)"))
+    }
+
     suspend fun deleteById(id: Long) {
         dao.getById(id)?.let { entity ->
             dao.delete(entity)

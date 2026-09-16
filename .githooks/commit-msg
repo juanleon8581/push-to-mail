@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Blocks Claude Code signature trailers from ever landing in a commit message.
+# See CLAUDE.md > Commit Convention.
+
+msg_file="$1"
+blocked=0
+
+check() {
+  local pattern="$1" label="$2"
+  if grep -qiE "$pattern" "$msg_file"; then
+    echo "✖ commit-msg: '$label' trailer is not allowed in this repo." >&2
+    blocked=1
+  fi
+}
+
+check '^co-authored-by:.*claude'      'Co-Authored-By: Claude...'
+check '^claude-session:'              'Claude-Session:'
+check 'generated with \[?claude code' 'Generated with Claude Code'
+check '🤖'                            'robot emoji signature'
+
+if [ "$blocked" -eq 1 ]; then
+  echo "" >&2
+  echo "Remove these lines and commit again. See CLAUDE.md > Commit Convention." >&2
+  exit 1
+fi
+
+exit 0

@@ -41,9 +41,17 @@ class MailWorker(
                 subject = subject,
                 body = body
             )
+            MailResultNotifier.notifyResult(applicationContext, trigger.id, trigger.name, success = true)
             Result.success()
         } catch (e: Exception) {
-            Result.retry()
+            // Solo avisar al usuario cuando el proceso termina de verdad -- reintentos
+            // silenciosos hasta agotar MAX_ATTEMPTS, recien ahi se notifica el fallo final.
+            if (runAttemptCount + 1 >= MAX_ATTEMPTS) {
+                MailResultNotifier.notifyResult(applicationContext, trigger.id, trigger.name, success = false)
+                Result.failure()
+            } else {
+                Result.retry()
+            }
         }
     }
 
@@ -52,5 +60,6 @@ class MailWorker(
         const val KEY_APP_NAME = "app_name"
         const val KEY_TITLE = "title"
         const val KEY_TEXT = "text"
+        private const val MAX_ATTEMPTS = 3
     }
 }

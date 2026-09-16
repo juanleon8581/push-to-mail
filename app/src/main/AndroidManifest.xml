@@ -3,18 +3,34 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Permite pedirle al usuario excluir la app del battery optimization de Doze,
+         asi el proceso (y con el, el NotificationListenerService) no se mata en
+         fabricantes agresivos (Xiaomi/Huawei/Samsung) mientras la app esta cerrada. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Sin esto, getInstalledApplications() en Android 11+ solo ve un subset
+         chico por package visibility filtering (targetSdk 34). Esta query declara
+         visibilidad hacia todas las apps con activity MAIN/LAUNCHER, que es
+         exactamente el filtro que ya usa loadInstalledApps(). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:name=".PushToMailApp"
         android:allowBackup="false"
         android:label="@string/app_name"
         android:icon="@android:drawable/sym_def_app_icon"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.PushToMail">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+            android:theme="@style/Theme.PushToMail">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -30,6 +46,14 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".notification.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
